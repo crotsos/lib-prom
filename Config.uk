@@ -1,0 +1,12 @@
+config LIBPROM
+	bool "c-prometheus-client - C prometheus client"
+	default n
+	select LIBNOLIBC if !HAVE_LIBC
+	select LIBUKDEBUG
+	select LIBUKALLOC
+    select LIBPOSIX_SYSINFO
+    select LIBPOSIX_LIBDL
+    default n
+
+if LIBPROM
+endif

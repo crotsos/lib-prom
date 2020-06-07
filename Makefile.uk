@@ -1,0 +1,64 @@
+################################################################################
+# Library registration
+################################################################################
+$(eval $(call addlib_s,libprom,$(CONFIG_LIBPROM)))
+
+################################################################################
+# Sources
+################################################################################
+LIBPROM_VERSION=0.1.1
+LIBPROM_URL=https://github.com/digitalocean/prometheus-client-c/archive/v$(LIBPROM_VERSION).tar.gz
+LIBPROM_PATCHDIR=$(LIBPROM_BASE)/patches
+$(eval $(call fetch,libprom,$(LIBPROM_URL)))
+$(eval $(call patch,libprom,$(LIBPROM_PATCHDIR),$(LIBPROM_ZIPNAME)))
+
+################################################################################
+# Helpers
+################################################################################
+LIBPROM_SUBDIR=prometheus-client-c-$(LIBPROM_VERSION)
+LIBPROM_SRC=$(LIBPROM_ORIGIN)/$(LIBPROM_SUBDIR)
+
+################################################################################
+# Library includes
+################################################################################
+CINCLUDES-$(CONFIG_LIBPROM) += -I$(LIBPROM_SRC)/prom/include/
+CINCLUDES-$(CONFIG_LIBPROM) += -I$(LIBPROM_SRC)/prom/src/
+CXXINCLUDES-$(CONFIG_LIBPROM) += -I$(LIBPROM_SRC)/prom/include/
+CXXINCLUDES-$(CONFIG_LIBPROM) += -I$(LIBPROM_SRC)/prom/src/
+
+################################################################################
+# Global flags
+################################################################################
+# Suppress some warnings to make the build process look neater
+SUPPRESS_FLAGS += -Wno-unused-parameter -Wno-unused-variable -Wno-nonnull	\
+-Wno-unused-but-set-variable -Wno-unused-label -Wno-char-subscripts		\
+-Wno-unused-function -Wno-missing-field-initializers -Wno-uninitialized		\
+-Wno-array-bounds -Wno-maybe-uninitialized -Wno-pointer-sign -Wno-unused-value	\
+-Wno-unused-macros -Wno-parentheses -Wno-implicit-function-declaration		\
+-Wno-missing-braces -Wno-endif-labels -Wno-unused-but-set-variable		\
+-Wno-implicit-function-declaration -Wno-type-limits -Wno-sign-compare
+
+# LIBPROM_CFLAGS-y    +=  $(SUPPRESS_FLAGS) -D_POSIX_READER_WRITER_LOCKS -D_POSIX_THREADS -U__linux__ -D__GNU__
+# LIBPROM_CXXFLAGS-y    +=  $(SUPPRESS_FLAGS) -D_POSIX_READER_WRITER_LOCKS -D_POSIX_THREADS -U__linux__ -D__GNU__
+#
+################################################################################
+# Library sources
+################################################################################
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_collector.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_collector_registry.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_counter.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_gauge.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_histogram.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_histogram_buckets.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_linked_list.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_map.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_metric.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_metric_formatter.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_metric_sample.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_metric_sample_histogram.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_process_fds.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_process_limits.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_process_stat.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_procfs.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/prom/src/prom_string_builder.c
+LIBPROM_SRCS-y += $(LIBPROM_SRC)/promhttp/src/promhttp.c
