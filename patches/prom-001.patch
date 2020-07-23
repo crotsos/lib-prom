@@ -1,0 +1,145 @@
+diff -Naur ./tmp/prometheus-client-c-0.1.1/docker/Dockerfile prometheus-client-c-0.1.1/docker/Dockerfile
+--- ./tmp/prometheus-client-c-0.1.1/docker/Dockerfile	1970-01-01 00:00:00.000000000 +0000
++++ prometheus-client-c-0.1.1/docker/Dockerfile	2020-06-10 15:35:44.422039938 +0000
+@@ -0,0 +1,22 @@
++FROM ubuntu:18.04
++
++RUN apt-get update && \
++    apt-get install -y apt-utils && \
++    apt-get install -y curl tar build-essential git pkg-config gdb valgrind gcc libmicrohttpd-dev doxygen graphviz && \
++    curl -sL https://github.com/Kitware/CMake/releases/download/v3.14.5/cmake-3.14.5-Linux-x86_64.tar.gz | tar xzf - -C /opt && \
++    cp /opt/cmake-3.14.5-Linux-x86_64/bin/* /usr/local/bin/ && \
++    cp -R /opt/cmake-3.14.5-Linux-x86_64/share/cmake-3.14 /usr/local/share/ && \
++    curl -sL https://dl.google.com/go/go1.13.1.linux-amd64.tar.gz 2> /dev/null | tar xzf - -C /usr/local && \
++    mkdir -p /gopath/{src,bin} && \
++    printf 'export GOPATH=/gopath\nexport PATH=$PATH:/usr/local/go/bin:/gopath/bin\n' > /root/.bash_profile && \
++    printf '#!/usr/bin/env bash\nsource /root/.bash_profile\nexec /bin/bash $@\n' > /entrypoint && \
++    chmod +x /entrypoint && \
++    GOPATH=/gopath /usr/local/go/bin/go get github.com/prometheus/prom2json && \
++    GOPATH=/gopath /usr/local/go/bin/go install github.com/prometheus/prom2json/cmd/prom2json && \
++    GOPATH=/gopath /usr/local/go/bin/go get github.com/git-chglog/git-chglog && \
++    GOPATH=/gopath /usr/local/go/bin/go install github.com/git-chglog/git-chglog/cmd/git-chglog && \
++    rm -rf /var/lib/apt/lists/*
++
++WORKDIR /code
++ENTRYPOINT ["/entrypoint"]
++
+diff -Naur ./tmp/prometheus-client-c-0.1.1/prom/include/prom_collector_registry.h prometheus-client-c-0.1.1/prom/include/prom_collector_registry.h
+--- ./tmp/prometheus-client-c-0.1.1/prom/include/prom_collector_registry.h	2020-02-18 20:08:11.000000000 +0000
++++ prometheus-client-c-0.1.1/prom/include/prom_collector_registry.h	2020-07-16 05:06:07.506929458 +0000
+@@ -34,7 +34,7 @@
+  * @brief Initialize the default registry by calling prom_collector_registry_init within your program. You MUST NOT
+  * modify this value.
+  */
+-prom_collector_registry_t *PROM_COLLECTOR_REGISTRY_DEFAULT;
++extern prom_collector_registry_t *PROM_COLLECTOR_REGISTRY_DEFAULT;
+ 
+ /**
+  * @brief Initializes the default collector registry and enables metric collection on the executing process
+@@ -119,5 +119,4 @@
+  */
+ int prom_collector_registry_validate_metric_name(prom_collector_registry_t *self,
+                                                                 const char *metric_name);
+-
+-#endif // PROM_H
+\ No newline at end of file
++#endif // PROM_H
+diff -Naur ./tmp/prometheus-client-c-0.1.1/prom/include/prom_histogram_buckets.h prometheus-client-c-0.1.1/prom/include/prom_histogram_buckets.h
+--- ./tmp/prometheus-client-c-0.1.1/prom/include/prom_histogram_buckets.h	2020-02-18 20:08:11.000000000 +0000
++++ prometheus-client-c-0.1.1/prom/include/prom_histogram_buckets.h	2020-06-10 15:35:22.885856641 +0000
+@@ -41,7 +41,7 @@
+ /**
+  * @brief the default histogram buckets: .005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10
+  */
+-prom_histogram_buckets_t *prom_histogram_default_buckets;
++extern prom_histogram_buckets_t *prom_histogram_default_buckets;
+ 
+ /**
+  *@brief Construct a linearly sized prom_histogram_buckets_t*
+diff -Naur ./tmp/prometheus-client-c-0.1.1/prom/src/prom_collector_registry.c prometheus-client-c-0.1.1/prom/src/prom_collector_registry.c
+--- ./tmp/prometheus-client-c-0.1.1/prom/src/prom_collector_registry.c	2020-02-18 20:08:11.000000000 +0000
++++ prometheus-client-c-0.1.1/prom/src/prom_collector_registry.c	2020-07-16 05:06:31.019137876 +0000
+@@ -37,6 +37,7 @@
+ #include "prom_process_limits_i.h"
+ #include "prom_string_builder_i.h"
+ 
++prom_collector_registry_t *PROM_COLLECTOR_REGISTRY_DEFAULT;
+ 
+ prom_collector_registry_t* prom_collector_registry_new(const char *name)
+ {
+diff -Naur ./tmp/prometheus-client-c-0.1.1/prom/src/prom_histogram.c prometheus-client-c-0.1.1/prom/src/prom_histogram.c
+--- ./tmp/prometheus-client-c-0.1.1/prom/src/prom_histogram.c	2020-02-18 20:08:11.000000000 +0000
++++ prometheus-client-c-0.1.1/prom/src/prom_histogram.c	2020-06-10 15:35:38.913993057 +0000
+@@ -30,7 +30,7 @@
+ #include "prom_metric_sample_histogram_i.h"
+ #include "prom_metric_sample_histogram_t.h"
+ 
+-
++prom_histogram_buckets_t *prom_histogram_default_buckets;
+ 
+ prom_histogram_t* prom_histogram_new(const char *name,
+                                      const char *help,
+diff -Naur ./tmp/prometheus-client-c-0.1.1/prom/src/prom_metric_sample.c prometheus-client-c-0.1.1/prom/src/prom_metric_sample.c
+--- ./tmp/prometheus-client-c-0.1.1/prom/src/prom_metric_sample.c	2020-02-18 20:08:11.000000000 +0000
++++ prometheus-client-c-0.1.1/prom/src/prom_metric_sample.c	2020-06-10 14:09:39.661917848 +0000
+@@ -32,7 +32,7 @@
+   prom_metric_sample_t *self = (prom_metric_sample_t*) prom_malloc(sizeof(prom_metric_sample_t));
+   self->type = type;
+   self->l_value = prom_strdup(l_value);
+-  self->r_value = ATOMIC_VAR_INIT(r_value);
++  self->r_value = r_value;
+   return self;
+ }
+ 
+@@ -65,13 +65,7 @@
+   if (r_value < 0) {
+     return 1;
+   }
+-  _Atomic double old = atomic_load(&self->r_value);
+-  for (;;) {
+-    _Atomic double new = ATOMIC_VAR_INIT(old + r_value);
+-    if (atomic_compare_exchange_weak(&self->r_value, &old, new)) {
+-      return 0;
+-    }
+-  }
++  self->r_value += r_value;
+ }
+ 
+ int prom_metric_sample_sub(prom_metric_sample_t *self, double r_value) {
+@@ -80,13 +74,7 @@
+     PROM_LOG(PROM_METRIC_INCORRECT_TYPE);
+     return 1;
+   }
+-  _Atomic double old = atomic_load(&self->r_value);
+-  for (;;) {
+-    _Atomic double new = ATOMIC_VAR_INIT(old - r_value);
+-    if (atomic_compare_exchange_weak(&self->r_value, &old, new)) {
+-      return 0;
+-    }
+-  }
++  self->r_value += r_value;
+ }
+ 
+ int prom_metric_sample_set(prom_metric_sample_t *self, double r_value) {
+@@ -94,6 +82,6 @@
+     PROM_LOG(PROM_METRIC_INCORRECT_TYPE);
+     return 1;
+   }
+-  atomic_store(&self->r_value, r_value);
++  self->r_value = r_value;
+   return 0;
+-}
+\ No newline at end of file
++}
+diff -Naur ./tmp/prometheus-client-c-0.1.1/prom/src/prom_metric_sample_t.h prometheus-client-c-0.1.1/prom/src/prom_metric_sample_t.h
+--- ./tmp/prometheus-client-c-0.1.1/prom/src/prom_metric_sample_t.h	2020-02-18 20:08:11.000000000 +0000
++++ prometheus-client-c-0.1.1/prom/src/prom_metric_sample_t.h	2020-06-10 14:10:03.678121781 +0000
+@@ -24,7 +24,7 @@
+ struct prom_metric_sample {
+   prom_metric_type_t type;      /**< type is the metric type for the sample */
+   char *l_value;           /**< l_value is the full metric name and label set represeted as a string */
+-  _Atomic double r_value;  /**< r_value is the value of the metric sample */
++  double r_value;  /**< r_value is the value of the metric sample */
+ };
+ 
+ #endif  // PROM_METRIC_SAMPLE_T_H
